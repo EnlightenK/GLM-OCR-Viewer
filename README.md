@@ -1,6 +1,6 @@
 # GLM-OCR Viewer
 
-A standalone side-by-side viewer for [GLM-OCR](https://github.com/THUDM/GLM-OCR) CLI output — PDF on the left, Markdown/JSON on the right, with interactive bounding-box highlighting that syncs between both panels.
+A standalone side-by-side viewer for [GLM-OCR](https://github.com/zai-org/GLM-OCR) CLI output — PDF on the left, Markdown/JSON on the right, with interactive bounding-box highlighting that syncs between both panels.
 
 > This viewer is extracted from [EnlightenK/GLM-OCR](https://github.com/EnlightenK/GLM-OCR) as a standalone tool.  
 > For the full OCR pipeline (model, CLI, self-hosting), see the main repo.
