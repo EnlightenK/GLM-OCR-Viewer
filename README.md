@@ -23,6 +23,7 @@ A standalone side-by-side viewer for [GLM-OCR](https://github.com/THUDM/GLM-OCR)
 | Tool | Minimum version |
 |------|----------------|
 | Python | 3.9+ |
+| [uv](https://docs.astral.sh/uv/) | latest |
 | Node.js | 18+ |
 
 ---
@@ -33,7 +34,7 @@ A standalone side-by-side viewer for [GLM-OCR](https://github.com/THUDM/GLM-OCR)
 
 ```bash
 cd backend
-pip install -r requirements.txt
+uv sync
 ```
 
 ### 2. Frontend
@@ -53,7 +54,7 @@ You need two terminals.
 
 ```bash
 cd backend
-uvicorn main:app --reload --port 8010
+uv run uvicorn main:app --reload --port 8010
 ```
 
 **Terminal 2 — Frontend (port 3007)**

@@ -15,9 +15,11 @@ It reads files you already processed with the `glmocr` CLI. No API key, no re-pr
 | Tool | Minimum version | Check |
 |---|---|---|
 | Python | 3.9 | `python3 --version` |
-| pip | any | `pip --version` |
+| uv | latest | `uv --version` |
 | Node.js | 18 | `node --version` |
 | npm | 8 | `npm --version` |
+
+Install uv: https://docs.astral.sh/uv/getting-started/installation/
 
 ---
 
@@ -28,19 +30,20 @@ You only need to run these install steps once.
 ### 1. Install Python dependencies
 
 ```bash
-cd apps/viewer/backend
-pip install -r requirements.txt
+cd backend
+uv sync
 ```
 
 Expected output ends with something like:
 ```
-Successfully installed fastapi-0.x.x uvicorn-0.x.x ...
+Resolved 10 packages in ...ms
+Installed 10 packages in ...ms
 ```
 
 ### 2. Install Node dependencies
 
 ```bash
-cd apps/viewer/frontend
+cd frontend
 npm install
 ```
 
@@ -58,8 +61,8 @@ You need **two terminals** running at the same time — one for the backend, one
 ### Terminal 1 — Backend
 
 ```bash
-cd apps/viewer/backend
-uvicorn main:app --reload --port 8010
+cd backend
+uv run uvicorn main:app --reload --port 8010
 ```
 
 You should see:
@@ -74,7 +77,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8010 (Press CTRL+C to quit)
 ### Terminal 2 — Frontend
 
 ```bash
-cd apps/viewer/frontend
+cd frontend
 npm run dev
 ```
 
@@ -225,15 +228,15 @@ npm run dev -- --port 3008
 
 You skipped the install step. Run:
 ```bash
-cd apps/viewer/backend
-pip install -r requirements.txt
+cd backend
+uv sync
 ```
 
 ### Frontend "Cannot find module" error
 
 You skipped the install step. Run:
 ```bash
-cd apps/viewer/frontend
+cd frontend
 npm install
 ```
 
@@ -251,10 +254,10 @@ Press `Ctrl+C` in each terminal to stop the backend and frontend servers.
 # Every time you want to use the viewer:
 
 # Terminal 1
-cd apps/viewer/backend && uvicorn main:app --reload --port 8010
+cd backend && uv run uvicorn main:app --reload --port 8010
 
 # Terminal 2
-cd apps/viewer/frontend && npm run dev
+cd frontend && npm run dev
 
 # Browser
 http://localhost:3007
