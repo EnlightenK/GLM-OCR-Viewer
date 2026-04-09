@@ -1,0 +1,206 @@
+import { useState, useEffect, useRef, useMemo, type RefObject } from 'react'
+import type { TaskResponse, UploadedFile } from '@/types'
+import { useOcrStore } from '@/store/useOcrStore'
+import PdfViewer from '@/components/ocr/PdfViewer'
+import { usePdfPageMetrics } from '@/hooks/usePdfPageMetrics'
+import { useFileBlockInteraction } from '@/hooks/useFileBlockInteraction'
+import { usePdfScrollToBlock } from '@/hooks/usePdfScrollToBlock'
+import { HighlightOverlay } from '@/components/ocr/HighlightOverlay'
+
+interface FilePreviewProps {
+  file: UploadedFile | null
+  result: TaskResponse | null
+}
+
+export function FilePreview({ file, result }: FilePreviewProps) {
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const viewerRef = useRef<HTMLDivElement>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
+  const hoveredBlockId = useOcrStore(s => s.hoveredBlockId)
+  const clickedBlockId = useOcrStore(s => s.clickedBlockId)
+  const setHoveredBlockId = useOcrStore(s => s.setHoveredBlockId)
+  const setClickedPdfBlockId = useOcrStore(s => s.setClickedPdfBlockId)
+  const blocks = useOcrStore(s => s.blocks)
+
+  const [showCopyButton, setShowCopyButton] = useState(false)
+
+  const pdfOriginalWidth = result?.response?.metadata?.width ?? 1654
+  const pdfOriginalHeight = result?.response?.metadata?.height ?? 2339
+
+  const isValid = useMemo(() => {
+    return (
+      !isNaN(pdfOriginalWidth) &&
+      !isNaN(pdfOriginalHeight) &&
+      result?.status === 'completed'
+    )
+  }, [pdfOriginalWidth, pdfOriginalHeight, result?.status])
+
+  const hoveredBlock = hoveredBlockId ? blocks.find(b => b.id === hoveredBlockId) : null
+  const clickedBlock = clickedBlockId ? blocks.find(b => b.id === clickedBlockId) : null
+  const activeBlock = clickedBlock || hoveredBlock || null
+
+  const [imageScale, setImageScale] = useState({ x: 1, y: 1, offsetX: 0, offsetY: 0 })
+  useEffect(() => {
+    if (!imageRef.current || file?.type === 'application/pdf') return
+    const updateImageScale = () => {
+      const img = imageRef.current
+      if (!img) return
+      const imgRect = img.getBoundingClientRect()
+      const containerRect = img.parentElement?.getBoundingClientRect()
+      if (!containerRect) return
+      const scaleX = imgRect.width / img.naturalWidth
+      const scaleY = imgRect.height / img.naturalHeight
+      const offsetX = imgRect.left - containerRect.left
+      const offsetY = imgRect.top - containerRect.top
+      setImageScale({ x: scaleX, y: scaleY, offsetX, offsetY })
+    }
+    const img = imageRef.current
+    if (img.complete) {
+      updateImageScale()
+    } else {
+      img.addEventListener('load', updateImageScale)
+    }
+    window.addEventListener('resize', updateImageScale)
+    return () => {
+      img.removeEventListener('load', updateImageScale)
+      window.removeEventListener('resize', updateImageScale)
+    }
+  }, [pdfUrl, file?.type])
+
+  const pdfPageMetrics = usePdfPageMetrics(
+    viewerRef as RefObject<HTMLDivElement>,
+    pdfUrl,
+    file?.type,
+    isValid,
+    activeBlock,
+    pdfOriginalWidth,
+    pdfOriginalHeight
+  )
+
+  const {
+    handlePdfClick,
+    handlePdfMouseMove,
+    handlePdfMouseLeave,
+    handleImageClick,
+    handleImageMouseMove,
+    handleImageMouseLeave,
+  } = useFileBlockInteraction({
+    blocks,
+    resultStatus: result?.status,
+    setHoveredBlockId,
+    setClickedBlockId: setClickedPdfBlockId,
+    setShowCopyButton,
+  })
+
+  usePdfScrollToBlock(
+    clickedBlockId,
+    clickedBlock ?? null,
+    viewerRef as RefObject<HTMLDivElement>,
+    pdfOriginalWidth,
+    pdfOriginalHeight,
+    result?.status
+  )
+
+  useEffect(() => {
+    if (!hoveredBlockId && !clickedBlockId) {
+      setShowCopyButton(false)
+    }
+  }, [hoveredBlockId, clickedBlockId])
+
+  useEffect(() => {
+    if (file && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
+      const url = URL.createObjectURL(file.file)
+      setPdfUrl(url)
+      return () => {
+        URL.revokeObjectURL(url)
+      }
+    } else {
+      setPdfUrl(null)
+    }
+  }, [file])
+
+  const renderPdfPageOverlay = (pageNumber: number) => {
+    if (!activeBlock || !activeBlock.bbox) return null
+    if (activeBlock.pageIndex !== pageNumber) return null
+
+    const metrics = pdfPageMetrics[pageNumber]
+    if (!metrics) return null
+
+    const scaleX = metrics.width / pdfOriginalWidth
+    const scaleY = metrics.height / pdfOriginalHeight
+
+    return (
+      <HighlightOverlay
+        block={activeBlock}
+        showCopyButton={showCopyButton}
+        style={{
+          left: metrics.offsetX + activeBlock.bbox[0] * scaleX,
+          top: metrics.offsetY + activeBlock.bbox[1] * scaleY,
+          width: activeBlock.width * scaleX,
+          height: activeBlock.height * scaleY,
+        }}
+      />
+    )
+  }
+
+  if (!file) {
+    return (
+      <div className='h-full flex items-center justify-center bg-gray-50'>
+        <div className='text-center text-gray-500'>
+          <p className='text-lg'>Select a document to preview</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='pdf-preview h-screen flex flex-col bg-white overflow-hidden relative'>
+      <div className='flex-1 h-full overflow-hidden' ref={viewerRef}>
+        {file.type === 'application/pdf' ? (
+          <PdfViewer
+            file={file.file}
+            className='h-full'
+            renderPageOverlay={renderPdfPageOverlay}
+            onPageClick={(e, pageNumber) =>
+              handlePdfClick(e, pageNumber, pdfOriginalWidth, pdfOriginalHeight)
+            }
+            onPageMouseMove={(e, pageNumber) =>
+              handlePdfMouseMove(e, pageNumber, pdfOriginalWidth, pdfOriginalHeight)
+            }
+            onPageMouseLeave={handlePdfMouseLeave}
+          />
+        ) : file.type.startsWith('image/') && pdfUrl ? (
+          <div
+            className='h-full flex items-center justify-center p-4 overflow-auto relative cursor-pointer'
+            onClick={handleImageClick}
+            onMouseMove={handleImageMouseMove}
+            onMouseLeave={handleImageMouseLeave}>
+            <img
+              ref={imageRef}
+              src={pdfUrl}
+              alt={file.name}
+              className='max-w-full max-h-full object-contain'
+            />
+            {activeBlock && activeBlock.bbox && (
+              <HighlightOverlay
+                block={activeBlock}
+                showCopyButton={showCopyButton}
+                style={{
+                  left: imageScale.offsetX + activeBlock.bbox[0] * imageScale.x,
+                  top: imageScale.offsetY + activeBlock.bbox[1] * imageScale.y,
+                  width: activeBlock.width * imageScale.x,
+                  height: activeBlock.height * imageScale.y,
+                }}
+                copyButtonClassName='right-6'
+              />
+            )}
+          </div>
+        ) : (
+          <div className='h-full flex items-center justify-center text-gray-500'>
+            <p>Unsupported file format</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
