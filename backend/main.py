@@ -22,19 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve the built frontend if the dist folder exists
-_dist = Path(__file__).parent.parent / "frontend" / "dist"
-if _dist.is_dir():
-    app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
-
-    @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_spa(full_path: str):
-        # Let /api routes fall through (they're registered above)
-        file = _dist / full_path
-        if file.is_file():
-            return FileResponse(file)
-        return FileResponse(_dist / "index.html")
-
 # Path prefix used in rewritten image URLs so the browser can fetch them
 # via the Vite proxy (/api/v1/... → this server)
 FILE_API = "/api/v1/file"
@@ -199,9 +186,16 @@ async def get_doc(
 
 
 # ---------------------------------------------------------------------------
-# Health check
+# Serve built frontend (must be registered AFTER all API routes)
 # ---------------------------------------------------------------------------
 
-@app.get("/")
-async def root():
-    return {"status": "ok", "service": "glm-ocr-viewer"}
+_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if _dist.is_dir():
+    app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        file = _dist / full_path
+        if file.is_file():
+            return FileResponse(file)
+        return FileResponse(_dist / "index.html")
