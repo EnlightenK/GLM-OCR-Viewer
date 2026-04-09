@@ -2,7 +2,7 @@
 
 A standalone side-by-side viewer for [GLM-OCR](https://github.com/zai-org/GLM-OCR) CLI output — PDF on the left, Markdown/JSON on the right, with interactive bounding-box highlighting that syncs between both panels.
 
-> This viewer is extracted from [EnlightenK/GLM-OCR](https://github.com/EnlightenK/GLM-OCR) as a standalone tool.  
+> This viewer is a companion tool for [zai-org/GLM-OCR](https://github.com/zai-org/GLM-OCR).  
 > For the full OCR pipeline (model, CLI, self-hosting), see the main repo.
 
 ---
@@ -90,14 +90,14 @@ See [GUIDE.md](GUIDE.md) for full usage instructions and troubleshooting.
 
 ## Generating input files
 
-This viewer reads output produced by the `glmocr` CLI from [EnlightenK/GLM-OCR](https://github.com/EnlightenK/GLM-OCR).
+This viewer reads output produced by the `glmocr` CLI from [zai-org/GLM-OCR](https://github.com/zai-org/GLM-OCR).
 
 ```bash
 # Example: process a folder of PDFs
 glmocr --input ./pdfs --output ./output
 ```
 
-Refer to the [main repo](https://github.com/EnlightenK/GLM-OCR) for installation and usage of the OCR pipeline.
+Refer to the [main repo](https://github.com/zai-org/GLM-OCR) for installation and usage of the OCR pipeline.
 
 ---
 
